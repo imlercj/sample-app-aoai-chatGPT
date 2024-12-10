@@ -4,8 +4,7 @@ import { Dialog, Stack, TextField } from '@fluentui/react'
 import { CopyRegular } from '@fluentui/react-icons'
 
 import { CosmosDBStatus } from '../../api'
-import Contoso from '../../assets/Contoso.svg'
-import { HistoryButton, ShareButton } from '../../components/common/Button'
+import { HistoryButton } from '../../components/common/Button'
 import { AppStateContext } from '../../state/AppProvider'
 
 import styles from './Layout.module.css'
@@ -14,54 +13,23 @@ const Layout = () => {
   const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false)
   const [copyClicked, setCopyClicked] = useState<boolean>(false)
   const [copyText, setCopyText] = useState<string>('Copy URL')
-  const [shareLabel, setShareLabel] = useState<string | undefined>('Share')
   const [hideHistoryLabel, setHideHistoryLabel] = useState<string>('Hide chat history')
   const [showHistoryLabel, setShowHistoryLabel] = useState<string>('Show chat history')
-  const [logo, setLogo] = useState('')
   const appStateContext = useContext(AppStateContext)
   const ui = appStateContext?.state.frontendSettings?.ui
-
-  const handleShareClick = () => {
-    setIsSharePanelOpen(true)
-  }
-
-  const handleSharePanelDismiss = () => {
-    setIsSharePanelOpen(false)
-    setCopyClicked(false)
-    setCopyText('Copy URL')
-  }
-
-  const handleCopyClick = () => {
-    navigator.clipboard.writeText(window.location.href)
-    setCopyClicked(true)
-  }
 
   const handleHistoryClick = () => {
     appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
   }
-
-  useEffect(() => {
-    if (!appStateContext?.state.isLoading) {
-      setLogo(ui?.logo || Contoso)
-    }
-  }, [appStateContext?.state.isLoading])
-
-  useEffect(() => {
-    if (copyClicked) {
-      setCopyText('Copied URL')
-    }
-  }, [copyClicked])
 
   useEffect(() => { }, [appStateContext?.state.isCosmosDBAvailable.status])
 
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 480) {
-        setShareLabel(undefined)
         setHideHistoryLabel('Hide history')
         setShowHistoryLabel('Show history')
       } else {
-        setShareLabel('Share')
         setHideHistoryLabel('Hide chat history')
         setShowHistoryLabel('Show chat history')
       }
@@ -78,7 +46,6 @@ const Layout = () => {
       <header className={styles.header} role={'banner'}>
         <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
           <Stack horizontal verticalAlign="center">
-            <img src={logo} className={styles.headerIcon} aria-hidden="true" alt="" />
             <Link to="/" className={styles.headerTitleContainer}>
               <h1 className={styles.headerTitle}>{ui?.title}</h1>
             </Link>
@@ -90,13 +57,12 @@ const Layout = () => {
                 text={appStateContext?.state?.isChatHistoryOpen ? hideHistoryLabel : showHistoryLabel}
               />
             )}
-            {ui?.show_share_button && <ShareButton onClick={handleShareClick} text={shareLabel} />}
           </Stack>
         </Stack>
       </header>
       <Outlet />
       <Dialog
-        onDismiss={handleSharePanelDismiss}
+        onDismiss={() => setIsSharePanelOpen(false)}
         hidden={!isSharePanelOpen}
         styles={{
           main: [
@@ -125,10 +91,16 @@ const Layout = () => {
             role="button"
             tabIndex={0}
             aria-label="Copy"
-            onClick={handleCopyClick}
-            onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? handleCopyClick() : null)}>
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href)
+              setCopyClicked(true)
+            }}
+            onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? () => {
+              navigator.clipboard.writeText(window.location.href)
+              setCopyClicked(true)
+            } : null)}>
             <CopyRegular className={styles.copyButton} />
-            <span className={styles.copyButtonText}>{copyText}</span>
+            <span className={styles.copyButtonText}>{copyClicked ? 'Copied URL' : 'Copy URL'}</span>
           </div>
         </Stack>
       </Dialog>
